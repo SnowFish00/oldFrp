@@ -104,41 +104,41 @@ func (pm *Manager) GetAllProxyStatus() []*WorkingStatus {
 
 func (pm *Manager) Reload(pxyCfgs map[string]config.ProxyConf) {
 	xl := xlog.FromContextSafe(pm.ctx)
-	pm.mu.Lock()
-	defer pm.mu.Unlock()
+	pm.mu.Lock()         // 锁定代理管理器，以确保同一时刻只有一个线程可以进行配置更新
+	defer pm.mu.Unlock() // 在函数返回时释放锁资源
 
-	delPxyNames := make([]string, 0)
+	delPxyNames := make([]string, 0) // 存储需要删除的代理名称列表
 	for name, pxy := range pm.proxies {
 		del := false
-		cfg, ok := pxyCfgs[name]
-		if !ok {
+		cfg, ok := pxyCfgs[name] // 获取新配置中是否存在相同名称的代理配置
+		if !ok {                 // 如果新配置中不存在同名代理，则需要删除该代理
 			del = true
-		} else if !pxy.Cfg.Compare(cfg) {
+		} else if !pxy.Cfg.Compare(cfg) { // 如果代理的配置与新配置不同，也需要删除该代理
 			del = true
 		}
 
-		if del {
-			delPxyNames = append(delPxyNames, name)
-			delete(pm.proxies, name)
+		if del { // 如果需要删除该代理
+			delPxyNames = append(delPxyNames, name) // 记录需要删除的代理名称
+			delete(pm.proxies, name)                // 从代理管理器中移除该代理
 
-			pxy.Stop()
+			pxy.Stop() // 停止代理服务
 		}
 	}
 	if len(delPxyNames) > 0 {
-		xl.Info("proxy removed: %v", delPxyNames)
+		xl.Info("proxy removed: %v", delPxyNames) // 记录被删除的代理信息
 	}
 
-	addPxyNames := make([]string, 0)
+	addPxyNames := make([]string, 0) // 存储需要添加的代理名称列表
 	for name, cfg := range pxyCfgs {
-		if _, ok := pm.proxies[name]; !ok {
-			pxy := NewWrapper(pm.ctx, cfg, pm.clientCfg, pm.HandleEvent, pm.serverUDPPort)
-			pm.proxies[name] = pxy
-			addPxyNames = append(addPxyNames, name)
+		if _, ok := pm.proxies[name]; !ok { // 如果代理管理器中不存在同名代理，说明是新代理
+			pxy := NewWrapper(pm.ctx, cfg, pm.clientCfg, pm.HandleEvent, pm.serverUDPPort) // 创建新代理实例
+			pm.proxies[name] = pxy                                                         // 将新代理添加到代理管理器中
+			addPxyNames = append(addPxyNames, name)                                        // 记录需要添加的代理名称
 
-			pxy.Start()
+			pxy.Start() // 启动新代理服务
 		}
 	}
 	if len(addPxyNames) > 0 {
-		xl.Info("proxy added: %v", addPxyNames)
+		xl.Info("proxy added: %v", addPxyNames) // 记录被添加的代理信息
 	}
 }

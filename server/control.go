@@ -185,6 +185,7 @@ func NewControl(
 }
 
 // Start send a login success message to client and start working.
+// 向客户端发送登录成功消息并开始工作。
 func (ctl *Control) Start() {
 	loginRespMsg := &msg.LoginResp{
 		Version:       version.Full(),
@@ -194,13 +195,18 @@ func (ctl *Control) Start() {
 	}
 	_ = msg.WriteMsg(ctl.conn, loginRespMsg)
 
+	//从sendCh取写msg
 	go ctl.writer()
 	for i := 0; i < ctl.poolCount; i++ {
 		ctl.sendCh <- &msg.ReqWorkConn{}
 	}
 
+	//代理msg处理逻辑
 	go ctl.manager()
+	//从readCh取读msg
 	go ctl.reader()
+
+	//关闭各种ch逻辑
 	go ctl.stoper()
 }
 
@@ -301,6 +307,7 @@ func (ctl *Control) writer() {
 		return
 	}
 	for {
+		//sendCh
 		m, ok := <-ctl.sendCh
 		if !ok {
 			xl.Info("control writer is closing")

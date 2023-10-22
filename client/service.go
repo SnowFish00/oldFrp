@@ -110,15 +110,19 @@ func (svr *Service) GetController() *Control {
 }
 
 func (svr *Service) Run() error {
+	// 获取日志记录器
 	xl := xlog.FromContextSafe(svr.ctx)
 
-	// set custom DNSServer
+	// 设置自定义 DNSServer（如果配置了）
 	if svr.cfg.DNSServer != "" {
 		dnsAddr := svr.cfg.DNSServer
+
+		// 检查 DNS 服务器地址是否包含端口，如果没有则默认使用端口 53
 		if _, _, err := net.SplitHostPort(dnsAddr); err != nil {
 			dnsAddr = net.JoinHostPort(dnsAddr, "53")
 		}
-		// Change default dns server for frpc
+
+		// 更改 frpc 的默认 DNS 服务器
 		net.DefaultResolver = &net.Resolver{
 			PreferGo: true,
 			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
@@ -127,20 +131,20 @@ func (svr *Service) Run() error {
 		}
 	}
 
-	// login to frps
+	// 尝试登录到 frps 服务器
 	for {
 		conn, cm, err := svr.login()
 		if err != nil {
 			xl.Warn("login to server failed: %v", err)
 
-			// if login_fail_exit is true, just exit this program
-			// otherwise sleep a while and try again to connect to server
+			// 如果配置为登录失败后立即退出程序，就返回错误
+			// 否则等待一段时间后再次尝试连接服务器
 			if svr.cfg.LoginFailExit {
 				return err
 			}
 			util.RandomSleep(10*time.Second, 0.9, 1.1)
 		} else {
-			// login success
+			// 登录成功
 			ctl := NewControl(svr.ctx, svr.runID, conn, cm, svr.cfg, svr.pxyCfgs, svr.visitorCfgs, svr.serverUDPPort, svr.authSetter)
 			ctl.Run()
 			svr.ctlMu.Lock()
@@ -150,12 +154,15 @@ func (svr *Service) Run() error {
 		}
 	}
 
+	// 启动一个后台协程来维护控制器的正常工作
 	go svr.keepControllerWorking()
 
+	// 如果配置了 Admin 服务器端口
 	if svr.cfg.AdminPort != 0 {
-		// Init admin server assets
+		// 初始化 Admin 服务器资源
 		assets.Load(svr.cfg.AssetsDir)
 
+		// 构建 Admin 服务器地址
 		address := net.JoinHostPort(svr.cfg.AdminAddr, strconv.Itoa(svr.cfg.AdminPort))
 		err := svr.RunAdminServer(address)
 		if err != nil {
@@ -163,6 +170,8 @@ func (svr *Service) Run() error {
 		}
 		log.Info("admin server listen on %s:%d", svr.cfg.AdminAddr, svr.cfg.AdminPort)
 	}
+
+	// 等待上下文完成信号，通常用于客户端的优雅关闭或发生错误
 	<-svr.ctx.Done()
 	return nil
 }
@@ -236,13 +245,16 @@ func (svr *Service) keepControllerWorking() {
 	}
 }
 
-// login creates a connection to frps and registers it self as a client
-// conn: control connection
-// session: if it's not nil, using tcp mux
+// login 方法用于创建到 frps 的连接，并将自身注册为客户端。
+// conn: 控制连接
+// session: 如果不为 nil，则使用 TCP 多路复用
 func (svr *Service) login() (conn net.Conn, cm *ConnectionManager, err error) {
 	xl := xlog.FromContextSafe(svr.ctx)
+
+	// 创建连接管理器
 	cm = NewConnectionManager(svr.ctx, &svr.cfg)
 
+	// 打开连接(与服务端建立udp或者tcp或者tcp多路复用)
 	if err = cm.OpenConnection(); err != nil {
 		return nil, nil, err
 	}
@@ -253,11 +265,13 @@ func (svr *Service) login() (conn net.Conn, cm *ConnectionManager, err error) {
 		}
 	}()
 
+	// 连接到服务器(流conn 或者 普通tcp conn)
 	conn, err = cm.Connect()
 	if err != nil {
 		return
 	}
 
+	// 创建登录消息
 	loginMsg := &msg.Login{
 		Arch:      runtime.GOARCH,
 		Os:        runtime.GOOS,
@@ -269,32 +283,38 @@ func (svr *Service) login() (conn net.Conn, cm *ConnectionManager, err error) {
 		Metas:     svr.cfg.Metas,
 	}
 
-	// Add auth
+	// 添加认证信息
 	if err = svr.authSetter.SetLogin(loginMsg); err != nil {
 		return
 	}
 
+	// 发送登录消息
 	if err = msg.WriteMsg(conn, loginMsg); err != nil {
 		return
 	}
 
+	// 读取登录响应消息
 	var loginRespMsg msg.LoginResp
+	//conn的最大超时
 	_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	if err = msg.ReadMsgInto(conn, &loginRespMsg); err != nil {
 		return
 	}
 	_ = conn.SetReadDeadline(time.Time{})
 
+	// 如果登录响应消息中包含错误信息，返回错误
 	if loginRespMsg.Error != "" {
 		err = fmt.Errorf("%s", loginRespMsg.Error)
 		xl.Error("%s", loginRespMsg.Error)
 		return
 	}
 
+	// 更新客户端的运行 ID 和日志前缀
 	svr.runID = loginRespMsg.RunID
 	xl.ResetPrefixes()
 	xl.AppendPrefix(svr.runID)
 
+	// 设置服务器的 UDP 端口
 	svr.serverUDPPort = loginRespMsg.ServerUDPPort
 	xl.Info("login to server success, get run id [%s], server udp port [%d]", loginRespMsg.RunID, loginRespMsg.ServerUDPPort)
 	return
@@ -350,7 +370,7 @@ func NewConnectionManager(ctx context.Context, cfg *config.ClientCommonConf) *Co
 func (cm *ConnectionManager) OpenConnection() error {
 	xl := xlog.FromContextSafe(cm.ctx)
 
-	// special for quic
+	// 特殊处理 QUIC 协议
 	if strings.EqualFold(cm.cfg.Protocol, "quic") {
 		var tlsConfig *tls.Config
 		var err error
@@ -358,6 +378,8 @@ func (cm *ConnectionManager) OpenConnection() error {
 		if sn == "" {
 			sn = cm.cfg.ServerAddr
 		}
+
+		// 如果启用 TLS，则构建 TLS 配置
 		if cm.cfg.TLSEnable {
 			tlsConfig, err = transport.NewClientTLSConfig(
 				cm.cfg.TLSCertFile,
@@ -367,12 +389,14 @@ func (cm *ConnectionManager) OpenConnection() error {
 		} else {
 			tlsConfig, err = transport.NewClientTLSConfig("", "", "", sn)
 		}
+
 		if err != nil {
 			xl.Warn("fail to build tls configuration, err: %v", err)
 			return err
 		}
 		tlsConfig.NextProtos = []string{"frp"}
 
+		// 使用 QUIC 协议(udp)创建连接
 		conn, err := quic.DialAddr(
 			net.JoinHostPort(cm.cfg.ServerAddr, strconv.Itoa(cm.cfg.ServerPort)),
 			tlsConfig, &quic.Config{
@@ -380,6 +404,7 @@ func (cm *ConnectionManager) OpenConnection() error {
 				MaxIncomingStreams: int64(cm.cfg.QUICMaxIncomingStreams),
 				KeepAlivePeriod:    time.Duration(cm.cfg.QUICKeepalivePeriod) * time.Second,
 			})
+
 		if err != nil {
 			return err
 		}
@@ -387,15 +412,18 @@ func (cm *ConnectionManager) OpenConnection() error {
 		return nil
 	}
 
+	// 如果不使用 TCP 多路复用，直接返回
 	if !cm.cfg.TCPMux {
 		return nil
 	}
 
+	// 创建真实连接（TCP 连接）
 	conn, err := cm.realConnect()
 	if err != nil {
 		return err
 	}
 
+	// 配置 TCP 多路复用
 	fmuxCfg := fmux.DefaultConfig()
 	fmuxCfg.KeepAliveInterval = time.Duration(cm.cfg.TCPMuxKeepaliveInterval) * time.Second
 	fmuxCfg.LogOutput = io.Discard
@@ -409,12 +437,15 @@ func (cm *ConnectionManager) OpenConnection() error {
 
 func (cm *ConnectionManager) Connect() (net.Conn, error) {
 	if cm.quicConn != nil {
+		// 如果使用 QUIC 连接
 		stream, err := cm.quicConn.OpenStreamSync(context.Background())
 		if err != nil {
 			return nil, err
 		}
+		// 将 QUIC 流转换为标准的 net.Conn
 		return frpNet.QuicStreamToNetConn(stream, cm.quicConn), nil
 	} else if cm.muxSession != nil {
+		// 如果使用 fmux 多路复用会话
 		stream, err := cm.muxSession.OpenStream()
 		if err != nil {
 			return nil, err
@@ -422,6 +453,7 @@ func (cm *ConnectionManager) Connect() (net.Conn, error) {
 		return stream, nil
 	}
 
+	// 如果不使用 QUIC 或 fmux，返回标准连接
 	return cm.realConnect()
 }
 
@@ -430,11 +462,11 @@ func (cm *ConnectionManager) realConnect() (net.Conn, error) {
 	var tlsConfig *tls.Config
 	var err error
 	if cm.cfg.TLSEnable {
+		// 如果启用 TLS，构建 TLS 配置
 		sn := cm.cfg.TLSServerName
 		if sn == "" {
 			sn = cm.cfg.ServerAddr
 		}
-
 		tlsConfig, err = transport.NewClientTLSConfig(
 			cm.cfg.TLSCertFile,
 			cm.cfg.TLSKeyFile,
@@ -446,18 +478,23 @@ func (cm *ConnectionManager) realConnect() (net.Conn, error) {
 		}
 	}
 
+	// 解析 HTTP 代理的 URL，获取代理类型、地址和可选的代理身份验证信息
 	proxyType, addr, auth, err := libdial.ParseProxyURL(cm.cfg.HTTPProxy)
 	if err != nil {
 		xl.Error("fail to parse proxy url")
 		return nil, err
 	}
+
+	// 根据协议配置连接选项，例如是否使用 WebSocket 协议、连接超时、保持连接等
 	dialOptions := []libdial.DialOption{}
 	protocol := cm.cfg.Protocol
 	if protocol == "websocket" {
 		protocol = "tcp"
+		// 如果使用 WebSocket，添加相应的连接 Hook
 		dialOptions = append(dialOptions, libdial.WithAfterHook(libdial.AfterHook{Hook: frpNet.DialHookWebsocket()}))
 	}
 	if cm.cfg.ConnectServerLocalIP != "" {
+		// 如果配置了本地 IP 地址，设置本地地址
 		dialOptions = append(dialOptions, libdial.WithLocalAddr(cm.cfg.ConnectServerLocalIP))
 	}
 	dialOptions = append(dialOptions,
@@ -471,6 +508,8 @@ func (cm *ConnectionManager) realConnect() (net.Conn, error) {
 			Hook: frpNet.DialHookCustomTLSHeadByte(tlsConfig != nil, cm.cfg.DisableCustomTLSFirstByte),
 		}),
 	)
+
+	// 使用 libdial.Dial 方法创建连接，传递连接选项
 	conn, err := libdial.Dial(
 		net.JoinHostPort(cm.cfg.ServerAddr, strconv.Itoa(cm.cfg.ServerPort)),
 		dialOptions...,

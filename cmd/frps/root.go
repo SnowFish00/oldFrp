@@ -64,6 +64,7 @@ var (
 	dashboardTLSKeyFile  string
 )
 
+// 初始化，设置命令行参数和标志
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file of frps")
 	rootCmd.PersistentFlags().BoolVarP(&showVersion, "version", "v", false, "version of frps")
@@ -96,6 +97,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&dashboardTLSKeyFile, "dashboard_tls_key_file", "", "", "dashboard tls key file")
 }
 
+// 根命令 rootCmd
 var rootCmd = &cobra.Command{
 	Use:   "frps",
 	Short: "frps is the server of frp (https://github.com/fatedier/frp)",
@@ -130,12 +132,14 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+// Execute 函数用于执行根命令 rootCmd
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
+// 解析服务器配置，支持从命令行参数或配置文件中读取
 func parseServerCommonCfg(fileType int, source []byte) (cfg config.ServerCommonConf, err error) {
 	if fileType == CfgFileTypeIni {
 		cfg, err = config.UnmarshalServerConfFromIni(source)
@@ -154,6 +158,7 @@ func parseServerCommonCfg(fileType int, source []byte) (cfg config.ServerCommonC
 	return
 }
 
+// 从命令行参数中解析服务器配置
 func parseServerCommonCfgFromCmd() (cfg config.ServerCommonConf, err error) {
 	cfg = config.GetDefaultServerConf()
 
@@ -199,6 +204,7 @@ func parseServerCommonCfgFromCmd() (cfg config.ServerCommonConf, err error) {
 	return
 }
 
+// 运行 frps 服务端
 func runServer(cfg config.ServerCommonConf) (err error) {
 	log.InitLog(cfg.LogWay, cfg.LogFile, cfg.LogLevel, cfg.LogMaxDays, cfg.DisableLogColor)
 

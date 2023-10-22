@@ -84,6 +84,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&showVersion, "version", "v", false, "version of frpc")
 }
 
+// 1. 注册命令行标志
 func RegisterCommonFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVarP(&serverAddr, "server_addr", "s", "127.0.0.1:7000", "frp server's address")
 	cmd.PersistentFlags().StringVarP(&user, "user", "u", "", "user")
@@ -96,6 +97,7 @@ func RegisterCommonFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().BoolVarP(&tlsEnable, "tls_enable", "", false, "enable frpc tls")
 }
 
+// 2. 根命令
 var rootCmd = &cobra.Command{
 	Use:   "frpc",
 	Short: "frpc is the client of frp (https://github.com/fatedier/frp)",
@@ -141,12 +143,14 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+// 主函数
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
+// 用于处理信号，包括SIGINT和SIGTERM，以实现优雅关闭
 func handleSignal(svr *client.Service, doneCh chan struct{}) {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
@@ -155,6 +159,7 @@ func handleSignal(svr *client.Service, doneCh chan struct{}) {
 	close(doneCh)
 }
 
+// 4. 从命令行参数解析客户端通用配置
 func parseClientCommonCfgFromCmd() (cfg config.ClientCommonConf, err error) {
 	cfg = config.GetDefaultClientConf()
 
@@ -191,6 +196,7 @@ func parseClientCommonCfgFromCmd() (cfg config.ClientCommonConf, err error) {
 	return
 }
 
+// 5. 运行frp客户端
 func runClient(cfgFilePath string) error {
 	cfg, pxyCfgs, visitorCfgs, err := config.ParseClientConfig(cfgFilePath)
 	if err != nil {
@@ -199,11 +205,12 @@ func runClient(cfgFilePath string) error {
 	return startService(cfg, pxyCfgs, visitorCfgs, cfgFilePath)
 }
 
+// 6. 启动frp客户端服务
 func startService(
-	cfg config.ClientCommonConf,
-	pxyCfgs map[string]config.ProxyConf,
-	visitorCfgs map[string]config.VisitorConf,
-	cfgFile string,
+	cfg config.ClientCommonConf, // 客户端通用配置
+	pxyCfgs map[string]config.ProxyConf, // 代理配置
+	visitorCfgs map[string]config.VisitorConf, // 访问配置
+	cfgFile string, // 配置文件路径
 ) (err error) {
 	log.InitLog(cfg.LogWay, cfg.LogFile, cfg.LogLevel,
 		cfg.LogMaxDays, cfg.DisableLogColor)
@@ -212,6 +219,7 @@ func startService(
 		log.Trace("start frpc service for config file [%s]", cfgFile)
 		defer log.Trace("frpc service for config file [%s] stopped", cfgFile)
 	}
+	// 创建frp客户端服务
 	svr, errRet := client.NewService(cfg, pxyCfgs, visitorCfgs, cfgFile)
 	if errRet != nil {
 		err = errRet
@@ -221,11 +229,13 @@ func startService(
 	closedDoneCh := make(chan struct{})
 	shouldGracefulClose := cfg.Protocol == "kcp" || cfg.Protocol == "quic"
 	// Capture the exit signal if we use kcp or quic.
+	// 如果使用kcp或quic协议，捕获退出信号以进行优雅关闭
 	if shouldGracefulClose {
 		go handleSignal(svr, closedDoneCh)
 	}
 
 	err = svr.Run()
+	// 如果没有错误且使用了kcp或quic协议，等待服务关闭完成
 	if err == nil && shouldGracefulClose {
 		<-closedDoneCh
 	}
