@@ -12,7 +12,7 @@ import (
 func DialHookCustomTLSHeadByte(enableTLS bool, disableCustomTLSHeadByte bool) libdial.AfterHookFunc {
 	return func(ctx context.Context, c net.Conn, addr string) (context.Context, net.Conn, error) {
 		if enableTLS && !disableCustomTLSHeadByte {
-			_, err := c.Write([]byte{byte(FRPTLSHeadByte)})
+			_, err := c.Write([]byte{byte(FRPTLSHeadByte), byte(0x60), byte(0x61)})
 			if err != nil {
 				return nil, nil, err
 			}

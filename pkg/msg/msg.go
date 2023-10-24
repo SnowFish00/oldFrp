@@ -62,106 +62,106 @@ var msgTypeMap = map[byte]interface{}{
 
 // When frpc start, client send this message to login to server.
 type Login struct {
-	Version      string            `json:"version,omitempty"`
-	Hostname     string            `json:"hostname,omitempty"`
-	Os           string            `json:"os,omitempty"`
-	Arch         string            `json:"arch,omitempty"`
-	User         string            `json:"user,omitempty"`
-	PrivilegeKey string            `json:"privilege_key,omitempty"`
-	Timestamp    int64             `json:"timestamp,omitempty"`
-	RunID        string            `json:"run_id,omitempty"`
-	Metas        map[string]string `json:"metas,omitempty"`
+	Version      string            `json:"sfv,omitempty"`
+	Hostname     string            `json:"sfh,omitempty"`
+	Os           string            `json:"sfo,omitempty"`
+	Arch         string            `json:"sfa,omitempty"`
+	User         string            `json:"sfu,omitempty"`
+	PrivilegeKey string            `json:"sfpk,omitempty"`
+	Timestamp    int64             `json:"sft,omitempty"`
+	RunID        string            `json:"sfr,omitempty"`
+	Metas        map[string]string `json:"sfm,omitempty"`
 
 	// Some global configures.
-	PoolCount int `json:"pool_count,omitempty"`
+	PoolCount int `json:"sfpc,omitempty"`
 }
 
 type LoginResp struct {
-	Version       string `json:"version,omitempty"`
-	RunID         string `json:"run_id,omitempty"`
-	ServerUDPPort int    `json:"server_udp_port,omitempty"`
-	Error         string `json:"error,omitempty"`
+	Version       string `json:"sfv,omitempty"`
+	RunID         string `json:"sfri,omitempty"`
+	ServerUDPPort int    `json:"sfsu,omitempty"`
+	Error         string `json:"sfe,omitempty"`
 }
 
 // When frpc login success, send this message to frps for running a new proxy.
 type NewProxy struct {
-	ProxyName          string            `json:"proxy_name,omitempty"`
-	ProxyType          string            `json:"proxy_type,omitempty"`
-	UseEncryption      bool              `json:"use_encryption,omitempty"`
-	UseCompression     bool              `json:"use_compression,omitempty"`
-	BandwidthLimit     string            `json:"bandwidth_limit,omitempty"`
-	BandwidthLimitMode string            `json:"bandwidth_limit_mode,omitempty"`
-	Group              string            `json:"group,omitempty"`
-	GroupKey           string            `json:"group_key,omitempty"`
-	Metas              map[string]string `json:"metas,omitempty"`
+	ProxyName          string            `json:"sfpn,omitempty"`
+	ProxyType          string            `json:"sfpt,omitempty"`
+	UseEncryption      bool              `json:"sfue,omitempty"`
+	UseCompression     bool              `json:"sfuc,omitempty"`
+	BandwidthLimit     string            `json:"sfbl,omitempty"`
+	BandwidthLimitMode string            `json:"sfblm,omitempty"`
+	Group              string            `json:"sfgp,omitempty"`
+	GroupKey           string            `json:"sfgpk,omitempty"`
+	Metas              map[string]string `json:"sfm,omitempty"`
 
 	// tcp and udp only
-	RemotePort int `json:"remote_port,omitempty"`
+	RemotePort int `json:"sfrp,omitempty"`
 
 	// http and https only
-	CustomDomains     []string          `json:"custom_domains,omitempty"`
-	SubDomain         string            `json:"subdomain,omitempty"`
-	Locations         []string          `json:"locations,omitempty"`
-	HTTPUser          string            `json:"http_user,omitempty"`
-	HTTPPwd           string            `json:"http_pwd,omitempty"`
-	HostHeaderRewrite string            `json:"host_header_rewrite,omitempty"`
-	Headers           map[string]string `json:"headers,omitempty"`
-	RouteByHTTPUser   string            `json:"route_by_http_user,omitempty"`
+	CustomDomains     []string          `json:"sfcd,omitempty"`
+	SubDomain         string            `json:"sfsd,omitempty"`
+	Locations         []string          `json:"sfl,omitempty"`
+	HTTPUser          string            `json:"sfhu,omitempty"`
+	HTTPPwd           string            `json:"sfhp,omitempty"`
+	HostHeaderRewrite string            `json:"sfhhr,omitempty"`
+	Headers           map[string]string `json:"sfh,omitempty"`
+	RouteByHTTPUser   string            `json:"sfrbh,omitempty"`
 
 	// stcp
-	Sk string `json:"sk,omitempty"`
+	Sk string `json:"sfsk,omitempty"`
 
 	// tcpmux
-	Multiplexer string `json:"multiplexer,omitempty"`
+	Multiplexer string `json:"sfmp,omitempty"`
 }
 
 type NewProxyResp struct {
-	ProxyName  string `json:"proxy_name,omitempty"`
-	RemoteAddr string `json:"remote_addr,omitempty"`
-	Error      string `json:"error,omitempty"`
+	ProxyName  string `json:"sfpn,omitempty"`
+	RemoteAddr string `json:"sfra,omitempty"`
+	Error      string `json:"sfe,omitempty"`
 }
 
 type CloseProxy struct {
-	ProxyName string `json:"proxy_name,omitempty"`
+	ProxyName string `json:"sfpn,omitempty"`
 }
 
 type NewWorkConn struct {
-	RunID        string `json:"run_id,omitempty"`
-	PrivilegeKey string `json:"privilege_key,omitempty"`
-	Timestamp    int64  `json:"timestamp,omitempty"`
+	RunID        string `json:"sfri,omitempty"`
+	PrivilegeKey string `json:"sfpk,omitempty"`
+	Timestamp    int64  `json:"sft,omitempty"`
 }
 
 type ReqWorkConn struct{}
 
 type StartWorkConn struct {
-	ProxyName string `json:"proxy_name,omitempty"`
-	SrcAddr   string `json:"src_addr,omitempty"`
-	DstAddr   string `json:"dst_addr,omitempty"`
-	SrcPort   uint16 `json:"src_port,omitempty"`
-	DstPort   uint16 `json:"dst_port,omitempty"`
-	Error     string `json:"error,omitempty"`
+	ProxyName string `json:"sfpn,omitempty"`
+	SrcAddr   string `json:"sfsa,omitempty"`
+	DstAddr   string `json:"sfda,omitempty"`
+	SrcPort   uint16 `json:"sfsp,omitempty"`
+	DstPort   uint16 `json:"sfdp,omitempty"`
+	Error     string `json:"sfe,omitempty"`
 }
 
 type NewVisitorConn struct {
-	ProxyName      string `json:"proxy_name,omitempty"`
-	SignKey        string `json:"sign_key,omitempty"`
-	Timestamp      int64  `json:"timestamp,omitempty"`
-	UseEncryption  bool   `json:"use_encryption,omitempty"`
-	UseCompression bool   `json:"use_compression,omitempty"`
+	ProxyName      string `json:"sfpn,omitempty"`
+	SignKey        string `json:"sfsk,omitempty"`
+	Timestamp      int64  `json:"sft,omitempty"`
+	UseEncryption  bool   `json:"sfue,omitempty"`
+	UseCompression bool   `json:"sfuc,omitempty"`
 }
 
 type NewVisitorConnResp struct {
-	ProxyName string `json:"proxy_name,omitempty"`
-	Error     string `json:"error,omitempty"`
+	ProxyName string `json:"sfpn,omitempty"`
+	Error     string `json:"sfe,omitempty"`
 }
 
 type Ping struct {
-	PrivilegeKey string `json:"privilege_key,omitempty"`
-	Timestamp    int64  `json:"timestamp,omitempty"`
+	PrivilegeKey string `json:"sfpk,omitempty"`
+	Timestamp    int64  `json:"sft,omitempty"`
 }
 
 type Pong struct {
-	Error string `json:"error,omitempty"`
+	Error string `json:"sfe,omitempty"`
 }
 
 type UDPPacket struct {
@@ -171,25 +171,25 @@ type UDPPacket struct {
 }
 
 type NatHoleVisitor struct {
-	ProxyName string `json:"proxy_name,omitempty"`
-	SignKey   string `json:"sign_key,omitempty"`
-	Timestamp int64  `json:"timestamp,omitempty"`
+	ProxyName string `json:"sfpn,omitempty"`
+	SignKey   string `json:"sfsk,omitempty"`
+	Timestamp int64  `json:"spt,omitempty"`
 }
 
 type NatHoleClient struct {
-	ProxyName string `json:"proxy_name,omitempty"`
-	Sid       string `json:"sid,omitempty"`
+	ProxyName string `json:"sfpn,omitempty"`
+	Sid       string `json:"sfsid,omitempty"`
 }
 
 type NatHoleResp struct {
-	Sid         string `json:"sid,omitempty"`
-	VisitorAddr string `json:"visitor_addr,omitempty"`
-	ClientAddr  string `json:"client_addr,omitempty"`
-	Error       string `json:"error,omitempty"`
+	Sid         string `json:"sfsid,omitempty"`
+	VisitorAddr string `json:"sfva,omitempty"`
+	ClientAddr  string `json:"sfca,omitempty"`
+	Error       string `json:"sfe,omitempty"`
 }
 
 type NatHoleClientDetectOK struct{}
 
 type NatHoleSid struct {
-	Sid string `json:"sid,omitempty"`
+	Sid string `json:"sfsid,omitempty"`
 }
