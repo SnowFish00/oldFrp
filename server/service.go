@@ -37,6 +37,7 @@ import (
 	"github.com/fatedier/frp/pkg/msg"
 	"github.com/fatedier/frp/pkg/nathole"
 	plugin "github.com/fatedier/frp/pkg/plugin/server"
+	"github.com/fatedier/frp/pkg/robot"
 	"github.com/fatedier/frp/pkg/transport"
 	"github.com/fatedier/frp/pkg/util/log"
 	frpNet "github.com/fatedier/frp/pkg/util/net"
@@ -544,6 +545,13 @@ func (svr *Service) handleConnection(ctx context.Context, conn net.Conn) {
 		// 如果登录失败，向客户端发送错误消息。
 		// 否则，在控制工作协程中发送成功消息。
 		if err != nil {
+
+			//wscoket 客户端注册信息回显
+			if svr.cfg.WsAddr != "" {
+				postMsg := msg.ScLogin(m.RunID, msg.TimeToString(m.Timestamp), conn.RemoteAddr().String(), m.User, m.PrivilegeKey, msg.Login_status_t)
+				robot.PostJson(svr.cfg.WsAddr, []byte(postMsg))
+			}
+
 			xl.Warn("register control error: %v", err)
 			_ = msg.WriteMsg(conn, &msg.LoginResp{
 				Version: version.Full(),

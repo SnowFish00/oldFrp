@@ -62,12 +62,16 @@ var (
 	dashboardTLSMode     bool
 	dashboardTLSCertFile string
 	dashboardTLSKeyFile  string
+
+	Wscoket string
 )
 
 // 初始化，设置命令行参数和标志
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file of frps")
 	rootCmd.PersistentFlags().BoolVarP(&showVersion, "version", "v", false, "version of frps")
+
+	rootCmd.PersistentFlags().StringVarP(&Wscoket, "wsocket", "w", "", "Start socketAddr")
 
 	rootCmd.PersistentFlags().StringVarP(&bindAddr, "bind_addr", "", "0.0.0.0", "bind address")
 	rootCmd.PersistentFlags().IntVarP(&bindPort, "bind_port", "p", 7000, "bind port")

@@ -33,6 +33,7 @@ import (
 	frpErr "github.com/fatedier/frp/pkg/errors"
 	"github.com/fatedier/frp/pkg/msg"
 	plugin "github.com/fatedier/frp/pkg/plugin/server"
+	"github.com/fatedier/frp/pkg/robot"
 	"github.com/fatedier/frp/pkg/util/util"
 	"github.com/fatedier/frp/pkg/util/version"
 	"github.com/fatedier/frp/pkg/util/xlog"
@@ -435,6 +436,10 @@ func (ctl *Control) manager() {
 		case <-heartbeatCh:
 			if time.Since(ctl.lastPing) > time.Duration(ctl.serverCfg.HeartbeatTimeout)*time.Second {
 				xl.Warn("heartbeat timeout")
+				if ctl.serverCfg.WsAddr != "" {
+					postMsg := msg.ScConnDisconnect(ctl.loginMsg.RunID, ctl.conn.RemoteAddr().String(), msg.PingConn_status_f)
+					robot.PostJson(ctl.serverCfg.WsAddr, []byte(postMsg))
+				}
 				return
 			}
 		case rawMsg, ok := <-ctl.readCh:
@@ -468,12 +473,25 @@ func (ctl *Control) manager() {
 					resp.Error = util.GenerateResponseErrorString(fmt.Sprintf("new proxy [%s] error", m.ProxyName), err, ctl.serverCfg.DetailedErrorsToClient)
 				} else {
 					resp.RemoteAddr = remoteAddr
+
+					//wscoket 客户端注册信息回显
+					if ctl.serverCfg.WsAddr != "" {
+						postMsg := msg.ScProxy(ctl.loginMsg.RunID, m.ProxyType, m.ProxyName, m.SubDomain, m.RemotePort, m.HTTPUser, m.HTTPPwd, msg.PingProxy_status_f)
+						robot.PostJson(ctl.serverCfg.WsAddr, []byte(postMsg))
+					}
+
 					xl.Info("new proxy [%s] type [%s] success", m.ProxyName, m.ProxyType)
 					metrics.Server.NewProxy(m.ProxyName, m.ProxyType)
 				}
 				ctl.sendCh <- resp
 			case *msg.CloseProxy:
 				_ = ctl.CloseProxy(m)
+
+				if ctl.serverCfg.WsAddr != "" {
+					postMsg := msg.ScProxyDisconnect(ctl.loginMsg.RunID, m.ProxyName, msg.PingProxy_status_f)
+					robot.PostJson(ctl.serverCfg.WsAddr, []byte(postMsg))
+				}
+
 				xl.Info("close proxy [%s] success", m.ProxyName)
 			case *msg.Ping:
 				content := &plugin.PingContent{

@@ -196,6 +196,9 @@ type ServerCommonConf struct {
 	// Enable golang pprof handlers in dashboard listener.
 	// Dashboard port must be set first.
 	PprofEnable bool `ini:"pprof_enable" json:"pprof_enable"`
+
+	//上线通知socket地址
+	WsAddr string `ini:"ws_addr" json:"ws_addr"`
 }
 
 // GetDefaultServerConf returns a server configuration with reasonable
@@ -225,6 +228,7 @@ func GetDefaultServerConf() ServerCommonConf {
 		UserConnTimeout:         10,
 		HTTPPlugins:             make(map[string]plugin.HTTPPluginOptions),
 		UDPPacketSize:           1500,
+		WsAddr:                  "",
 	}
 }
 
@@ -263,6 +267,10 @@ func UnmarshalServerConfFromIni(source interface{}) (ServerCommonConf, error) {
 		}
 		common.AllowPortsStr = allowPortStr
 	}
+
+	//wsocket_addr
+	wsAddr := s.Key("ws_addr").String()
+	common.WsAddr = wsAddr
 
 	// plugin.xxx
 	pluginOpts := make(map[string]plugin.HTTPPluginOptions)
