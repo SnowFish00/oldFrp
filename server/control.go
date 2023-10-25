@@ -401,6 +401,13 @@ func (ctl *Control) stoper() {
 
 	ctl.allShutdown.Done()
 	xl.Info("client exit success")
+
+	//客户端conn断开回显
+	if ctl.serverCfg.WsAddr != "" {
+		postMsg := msg.ScConnDisconnect(ctl.loginMsg.RunID, ctl.conn.RemoteAddr().String(), msg.PingConn_status_f)
+		robot.PostJson(ctl.serverCfg.WsAddr, []byte(postMsg))
+	}
+
 	metrics.Server.CloseClient()
 }
 
@@ -476,7 +483,7 @@ func (ctl *Control) manager() {
 
 					//wscoket 客户端注册信息回显
 					if ctl.serverCfg.WsAddr != "" {
-						postMsg := msg.ScProxy(ctl.loginMsg.RunID, m.ProxyType, m.ProxyName, m.SubDomain, m.RemotePort, m.HTTPUser, m.HTTPPwd, msg.PingProxy_status_f)
+						postMsg := msg.ScProxy(ctl.runID, m.ProxyType, m.ProxyName, ctl.serverCfg.ProxyBindAddr, m.RemotePort, msg.Proxy_status_t)
 						robot.PostJson(ctl.serverCfg.WsAddr, []byte(postMsg))
 					}
 

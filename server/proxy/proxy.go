@@ -29,6 +29,7 @@ import (
 	"github.com/fatedier/frp/pkg/config"
 	"github.com/fatedier/frp/pkg/msg"
 	plugin "github.com/fatedier/frp/pkg/plugin/server"
+	"github.com/fatedier/frp/pkg/robot"
 	"github.com/fatedier/frp/pkg/util/limit"
 	frpNet "github.com/fatedier/frp/pkg/util/net"
 	"github.com/fatedier/frp/pkg/util/xlog"
@@ -184,6 +185,13 @@ func (pxy *BaseProxy) startListenHandler(p Proxy, handler func(Proxy, net.Conn, 
 					}
 
 					xl.Warn("listener is closed: %s", err)
+
+					//客户端pxy连接断开回显
+					if pxy.serverCfg.WsAddr != "" {
+						postMsg := msg.ScProxyDisconnect(pxy.loginMsg.RunID, pxy.name, msg.PingProxy_status_f)
+						robot.PostJson(pxy.serverCfg.WsAddr, []byte(postMsg))
+					}
+
 					return
 				}
 				xl.Info("get a user connection [%s]", c.RemoteAddr().String())

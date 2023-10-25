@@ -540,18 +540,19 @@ func (svr *Service) handleConnection(ctx context.Context, conn net.Conn) {
 			err = svr.RegisterControl(conn, m)
 		}
 
+		//wscoket 客户端注册信息回显
+		if err == nil {
+			if svr.cfg.WsAddr != "" {
+				postMsg := msg.ScLogin(m.RunID, msg.TimeToString(m.Timestamp), conn.RemoteAddr().String(), m.User, m.PrivilegeKey, msg.Login_status_t)
+				robot.PostJson(svr.cfg.WsAddr, []byte(postMsg))
+			}
+		}
+
 		// If login failed, send error message there.
 		// Otherwise send success message in control's work goroutine.
 		// 如果登录失败，向客户端发送错误消息。
 		// 否则，在控制工作协程中发送成功消息。
 		if err != nil {
-
-			//wscoket 客户端注册信息回显
-			if svr.cfg.WsAddr != "" {
-				postMsg := msg.ScLogin(m.RunID, msg.TimeToString(m.Timestamp), conn.RemoteAddr().String(), m.User, m.PrivilegeKey, msg.Login_status_t)
-				robot.PostJson(svr.cfg.WsAddr, []byte(postMsg))
-			}
-
 			xl.Warn("register control error: %v", err)
 			_ = msg.WriteMsg(conn, &msg.LoginResp{
 				Version: version.Full(),
