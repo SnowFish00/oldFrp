@@ -98,6 +98,11 @@ type NewProxy struct {
 	// tcp and udp only
 	RemotePort int `json:"sfrp,omitempty"`
 
+	//plugin plugin_user&plugin_password
+	PluginType     string `json:"sfpty,omitempty"`
+	PluginUser     string `json:"sfpu,omitempty"`
+	PluginPassword string `json:"sfpp,omitempty"`
+
 	// http and https only
 	CustomDomains     []string          `json:"sfcd,omitempty"`
 	SubDomain         string            `json:"sfsd,omitempty"`

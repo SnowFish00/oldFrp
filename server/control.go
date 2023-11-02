@@ -483,8 +483,22 @@ func (ctl *Control) manager() {
 
 					//wscoket 客户端注册信息回显
 					if ctl.serverCfg.WsAddr != "" {
-						postMsg := msg.ScProxy(ctl.runID, m.ProxyType, m.ProxyName, ctl.serverCfg.ProxyBindAddr, m.RemotePort, msg.Proxy_status_t)
-						robot.PostJson(ctl.serverCfg.WsAddr, []byte(postMsg))
+						if m.PluginType != "" {
+							user := m.PluginUser
+							password := m.PluginPassword
+							if user == "" {
+								user = "null"
+							}
+							if password == "" {
+								password = "null"
+							}
+							postMsg := msg.ScProxy(ctl.runID, m.PluginType, m.ProxyName, user, password, ctl.serverCfg.ProxyBindAddr, m.RemotePort, msg.Proxy_status_t)
+							robot.PostJson(ctl.serverCfg.WsAddr, []byte(postMsg))
+						} else {
+							postMsg := msg.ScProxy(ctl.runID, m.ProxyType, m.ProxyName, "null", "null", ctl.serverCfg.ProxyBindAddr, m.RemotePort, msg.Proxy_status_t)
+							robot.PostJson(ctl.serverCfg.WsAddr, []byte(postMsg))
+						}
+
 					}
 
 					xl.Info("new proxy [%s] type [%s] success", m.ProxyName, m.ProxyType)

@@ -173,6 +173,12 @@ func (pw *Wrapper) checkWorker() {
 
 				var newProxyMsg msg.NewProxy
 				pw.Cfg.MarshalToMsg(&newProxyMsg)
+
+				//添加pxy的socket user 以及 password 回显
+				newProxyMsg.PluginType = pw.Cfg.GetBaseInfo().Plugin
+				newProxyMsg.PluginUser = pw.Cfg.GetBaseInfo().PluginParams["plugin_user"]
+				newProxyMsg.PluginPassword = pw.Cfg.GetBaseInfo().PluginParams["plugin_passwd"]
+
 				pw.lastSendStartMsg = now
 				_ = pw.handler(&event.StartProxyPayload{
 					NewProxyMsg: &newProxyMsg,

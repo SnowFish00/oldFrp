@@ -28,7 +28,7 @@ func ScLogin(RunID string, Timestamp string, ClientAddress string, User string, 
 	}`, RunID, Timestamp, ClientAddress, User, PrivilegeKey, status)
 }
 
-func ScProxy(RunID string, ProxyType string, ProxyName string, SubDomain string, Port int, status string) string {
+func ScProxy(RunID string, ProxyType string, ProxyName string, User string, Password string, SubDomain string, Port int, status string) string {
 
 	return fmt.Sprintf(`
 	{
@@ -38,11 +38,13 @@ func ScProxy(RunID string, ProxyType string, ProxyName string, SubDomain string,
 			 >RunID:<font color=\"comment\">%s</font>
 			 >代理类型:<font color=\"comment\">%s</font>
 			 >代理名:<font color=\"comment\">%s</font>
+			 >User:<font color=\"comment\">%s</font>
+			 >Password:<font color=\"comment\">%s</font>
 			 >pxy绑定地址:<font color=\"comment\">%s</font>
 			 >Port:<font color=\"comment\">%d</font>
 			 >当前状态:<font color=\"comment\">%s</font>"
 		}
-	}`, RunID, ProxyType, ProxyName, SubDomain, Port, status)
+	}`, RunID, ProxyType, ProxyName, User, Password, SubDomain, Port, status)
 
 }
 
