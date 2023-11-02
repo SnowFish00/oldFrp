@@ -19,6 +19,8 @@ import (
 	"os"
 	"strings"
 	"text/template"
+
+	"github.com/fatedier/frp/pkg/config/cfgED/decryption"
 )
 
 var glbEnvs map[string]string
@@ -64,7 +66,8 @@ func RenderContent(in []byte) (out []byte, err error) {
 
 func GetRenderedConfFromFile(path string) (out []byte, err error) {
 	var b []byte
-	b, err = os.ReadFile(path)
+	b, err = decryption.DecryptFileContents(path)
+
 	if err != nil {
 		return
 	}
