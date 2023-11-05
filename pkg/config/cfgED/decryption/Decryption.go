@@ -4,8 +4,13 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/hex"
+	"fmt"
 	"io"
+	"math/big"
 	"os"
+	"strings"
+
+	"golang.org/x/crypto/chacha20"
 )
 
 func DecryptFileContents(inputFilePath string) ([]byte, error) {
@@ -56,4 +61,53 @@ func DecryptFileContents(inputFilePath string) ([]byte, error) {
 	}
 
 	return decryptedData, nil
+}
+
+const base62Alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+
+// Base62Decode 解码 Base62 字符串为字节切片。
+func Base62Decode(s string) ([]byte, error) {
+	var bi big.Int
+	base := big.NewInt(62)
+	for i := 0; i < len(s); i++ {
+		index := big.NewInt(int64(strings.IndexByte(base62Alphabet, s[i])))
+		if index.Sign() == -1 {
+			return nil, fmt.Errorf("invalid character: %s", string(s[i]))
+		}
+		bi.Mul(&bi, base)
+		bi.Add(&bi, index)
+	}
+
+	return bi.Bytes(), nil
+}
+
+// decodeAndDecrypt 使用 Base62 对编码的数据进行解码，然后使用 ChaCha20 算法进行解密。
+// 它返回解密后的字符串，如果过程中有错误发生则返回错误。
+func DecodeAndDecrypt(encodedStr string) (string, error) {
+	const hexKey = "a5abeb36d6c0a9736264d4cc40a56acd81ef76fbe1ac27873cc0665dc8e531f4"
+	const hexNonce = "58ea883fd20adf161ab89dcd"
+
+	key, err := hex.DecodeString(hexKey)
+	if err != nil {
+		return "", fmt.Errorf("invalid key: %w", err)
+	}
+	nonce, err := hex.DecodeString(hexNonce)
+	if err != nil {
+		return "", fmt.Errorf("invalid nonce: %w", err)
+	}
+
+	ciphertext, err := Base62Decode(encodedStr)
+	if err != nil {
+		return "", err
+	}
+
+	c, err := chacha20.NewUnauthenticatedCipher(key, nonce)
+	if err != nil {
+		return "", err
+	}
+
+	plaintext := make([]byte, len(ciphertext))
+	c.XORKeyStream(plaintext, ciphertext)
+
+	return string(plaintext), nil
 }

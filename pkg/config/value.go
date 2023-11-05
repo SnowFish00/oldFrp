@@ -64,9 +64,33 @@ func RenderContent(in []byte) (out []byte, err error) {
 	return
 }
 
-func GetRenderedConfFromFile(path string) (out []byte, err error) {
+func GetRenderedConfFromFile(fORoCfg string) (out []byte, err error) {
 	var b []byte
-	b, err = decryption.DecryptFileContents(path)
+	//配置文件传参
+
+	//解密配置文件
+	b, err = decryption.DecryptFileContents(fORoCfg)
+	if err != nil {
+		return
+	}
+
+	out, err = RenderContent(b)
+	return
+}
+
+func GetRenderedConfFromFileOrder(fORoCfg string) (out []byte, err error) {
+	var b []byte
+
+	//指令传参
+
+	//解密后的orderStr
+	orderStr, err := decryption.DecodeAndDecrypt(fORoCfg)
+
+	//解除映射
+	cfgstr := decryption.ExpandAbbreviatedConfig(orderStr)
+
+	//还原为[]byte
+	b = []byte(cfgstr)
 
 	if err != nil {
 		return

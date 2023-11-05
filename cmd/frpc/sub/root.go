@@ -42,6 +42,7 @@ const (
 
 var (
 	cfgFile     string
+	cfgOrder    string
 	cfgDir      string
 	showVersion bool
 
@@ -80,6 +81,7 @@ var (
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "./frpc.ini", "config file of frpc")
+	rootCmd.PersistentFlags().StringVarP(&cfgOrder, "order", "o", "", "read config from order")
 	rootCmd.PersistentFlags().StringVarP(&cfgDir, "config_dir", "", "", "config directory, run one frpc service for each file in config directory")
 	rootCmd.PersistentFlags().BoolVarP(&showVersion, "version", "v", false, "version of frpc")
 }
@@ -134,12 +136,24 @@ var rootCmd = &cobra.Command{
 		}
 
 		// Do not show command usage here.
-		err := runClient(cfgFile)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+		if cfgOrder == "" {
+			//配置文件载入
+			err := runClient(cfgFile)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			return nil
+		} else {
+			//配置文件不落地载入
+			err := runClient(cfgOrder)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			return nil
 		}
-		return nil
+
 	},
 }
 
@@ -197,12 +211,27 @@ func parseClientCommonCfgFromCmd() (cfg config.ClientCommonConf, err error) {
 }
 
 // 5. 运行frp客户端
-func runClient(cfgFilePath string) error {
-	cfg, pxyCfgs, visitorCfgs, err := config.ParseClientConfig(cfgFilePath)
-	if err != nil {
-		return err
+func runClient(focfg string) error {
+	var cfg config.ClientCommonConf
+	var pxyCfgs map[string]config.ProxyConf
+	var visitorCfgs map[string]config.VisitorConf
+	var err error
+	//判断传参方式
+	if cfgOrder == "" {
+		cfg, pxyCfgs, visitorCfgs, err = config.ParseClientConfig(focfg)
+		if err != nil {
+			return err
+		}
+		return startService(cfg, pxyCfgs, visitorCfgs, focfg)
+
+	} else {
+		cfg, pxyCfgs, visitorCfgs, err = config.ParseClientConfigOrder(focfg)
+		if err != nil {
+			return err
+		}
+		return startService(cfg, pxyCfgs, visitorCfgs, "")
 	}
-	return startService(cfg, pxyCfgs, visitorCfgs, cfgFilePath)
+
 }
 
 // 6. 启动frp客户端服务
