@@ -139,6 +139,7 @@ func (pm *Manager) Reload(pxyCfgs map[string]config.ProxyConf) {
 		}
 	}
 	if len(addPxyNames) > 0 {
-		xl.Info("proxy added: %v", addPxyNames) // 记录被添加的代理信息
+		//删除回显
+		// xl.Info("proxy added: %v", addPxyNames) // 记录被添加的代理信息
 	}
 }

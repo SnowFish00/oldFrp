@@ -184,6 +184,8 @@ func (ctl *Control) HandleReqWorkConn(inMsg *msg.ReqWorkConn) {
 func (ctl *Control) HandleNewProxyResp(inMsg *msg.NewProxyResp) {
 	// 获取与控制器相关联的日志记录器（xl）
 	xl := ctl.xl
+	//暂时忽略xl
+	_ = xl // 使用空白标识符来“使用”变量，避免编译器警告
 
 	// 服务器将返回 NewProxyResp 消息作为每个 NewProxy 消息的响应。
 	// 如果没有错误，启动一个新的代理处理程序
@@ -191,10 +193,12 @@ func (ctl *Control) HandleNewProxyResp(inMsg *msg.NewProxyResp) {
 
 	// 如果启动代理时发生错误，记录警告信息
 	if err != nil {
-		xl.Warn("[%s] start error: %v", inMsg.ProxyName, err)
+		//删除回显
+		// xl.Warn("[%s] start error: %v", inMsg.ProxyName, err)
 	} else {
+		//删除回显
 		// 否则，代理成功启动，记录信息
-		xl.Info("[%s] start proxy success", inMsg.ProxyName)
+		// xl.Info("[%s] start proxy success", inMsg.ProxyName)
 	}
 }
 
@@ -284,7 +288,8 @@ func (ctl *Control) writer() {
 
 		// 检查通道是否已关闭，如果已关闭，writer 函数结束
 		if !ok {
-			xl.Info("control writer is closing")
+			//关闭回显
+			// xl.Info("control writer is closing")
 			return
 		}
 

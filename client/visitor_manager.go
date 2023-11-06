@@ -57,7 +57,8 @@ func (vm *VisitorManager) Run() {
 	for {
 		select {
 		case <-vm.stopCh:
-			xl.Info("gracefully shutdown visitor manager")
+			//关闭回显
+			// xl.Info("gracefully shutdown visitor manager")
 			return
 		case <-ticker.C:
 			vm.mu.Lock()

@@ -84,6 +84,9 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgOrder, "order", "o", "", "read config from order")
 	rootCmd.PersistentFlags().StringVarP(&cfgDir, "config_dir", "", "", "config directory, run one frpc service for each file in config directory")
 	rootCmd.PersistentFlags().BoolVarP(&showVersion, "version", "v", false, "version of frpc")
+	rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+		// 这里不执行任何操作，或者输出自定义的错误信息
+	})
 }
 
 // 1. 注册命令行标志

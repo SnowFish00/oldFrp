@@ -216,11 +216,12 @@ func (svr *Service) keepControllerWorking() {
 			if atomic.LoadUint32(&svr.exit) != 0 {
 				return
 			}
-
-			xl.Info("try to reconnect to server...")
+			//关闭回显
+			// xl.Info("try to reconnect to server...")
 			conn, cm, err := svr.login()
 			if err != nil {
-				xl.Warn("reconnect to server error: %v, wait %v for another retry", err, delayTime)
+				//关闭回显
+				// xl.Warn("reconnect to server error: %v, wait %v for another retry", err, delayTime)
 				util.RandomSleep(delayTime, 0.9, 1.1)
 
 				delayTime *= 2
@@ -316,7 +317,8 @@ func (svr *Service) login() (conn net.Conn, cm *ConnectionManager, err error) {
 
 	// 设置服务器的 UDP 端口
 	svr.serverUDPPort = loginRespMsg.ServerUDPPort
-	xl.Info("login to server success, get run id [%s], server udp port [%d]", loginRespMsg.RunID, loginRespMsg.ServerUDPPort)
+	//删除回显
+	// xl.Info("login to server success, get run id [%s], server udp port [%d]", loginRespMsg.RunID, loginRespMsg.ServerUDPPort)
 	return
 }
 
