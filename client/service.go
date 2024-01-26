@@ -135,7 +135,9 @@ func (svr *Service) Run() error {
 	for {
 		conn, cm, err := svr.login()
 		if err != nil {
-			xl.Warn("login to server failed: %v", err)
+			// xl.Warn("login to server failed: %v", err)
+			//暂时忽略xl
+			_ = xl // 使用空白标识符来“使用”变量，避免编译器警告
 
 			// 如果配置为登录失败后立即退出程序，就返回错误
 			// 否则等待一段时间后再次尝试连接服务器
