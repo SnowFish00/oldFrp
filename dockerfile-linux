@@ -1,0 +1,41 @@
+FROM golang:1.20 as builder
+
+# 设置 Go module 和代理
+ENV GOPROXY=https://goproxy.cn,direct
+ENV GO111MODULE=on
+
+# 设置工作目录
+WORKDIR /root/
+
+# 将代码复制到容器中
+COPY . .
+
+# 构建应用程序
+RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux \
+    go build -o bin/Projects/sfc ./cmd/frpc && \
+    go build -o bin/Projects/sfs ./cmd/frps && \
+    go build -o bin/Tools/sfs_EncryptionTool ./pkg/config/cfgED/Tool/sfs_EncryptAndDecryptTool/sfs_EncryptionTool.go && \
+    go build -o bin/Tools/sfs_DecryptionTool ./pkg/config/cfgED/Tool/sfs_EncryptAndDecryptTool/sfs_DecryptionTool.go && \
+    go build -o bin/Tools/config_Simplification ./pkg/config/cfgED/Tool/sfc_SimplificationTool/config_Simplification.go && \
+    go build -o bin/Tools/config_UnSimplification ./pkg/config/cfgED/Tool/sfc_SimplificationTool/config_UnSimplification.go && \
+    go build -o bin/Tools/sfc_EncryptionTool ./pkg/config/cfgED/Tool/sfc_EncryptAndDecryptTool/sfc_EncryptionTool.go && \
+    go build -o bin/Tools/sfc_DecryptionTool ./pkg/config/cfgED/Tool/sfc_EncryptAndDecryptTool/sfc_DecryptionTool.go
+
+FROM alpine
+
+# 设置工作目录
+WORKDIR /data/
+
+# 从builder阶段复制二进制文件到当前镜像
+COPY --from=builder /root/ .
+
+# 暴露端口
+EXPOSE 8080
+#创建挂载后移动的目录
+CMD ["mkdir -p /app/bin/"]
+
+# 显式指定容器启动时要执行的命令
+ENTRYPOINT [ "/bin/sh","-c","mv /data/bin/* /app/bin/ && sleep 1h" ]
+
+#编译 docker build -t sfcs/linux:1.0 .
+#挂载 docker run --name=sfcslinux -itd -p 7000:8080 -v F:\sundry\frptest\pure\linux:/app/bin sfcs/linux:1.0
